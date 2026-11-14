@@ -1,0 +1,43 @@
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: evaluativa-db
+    environment:
+      MYSQL_ROOT_PASSWORD: SecurePass123
+      MYSQL_DATABASE: evaluativa_db
+      MYSQL_USER: app_user
+      MYSQL_PASSWORD: AppPass456
+    volumes:
+      - datos-evaluativa:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - red-evaluativa
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=\"$${MYSQL_ROOT_PASSWORD}\" mysqladmin ping -h 127.0.0.1 -u root --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  web:
+    build: ./web
+    container_name: evaluativa-web
+    ports:
+      - "8085:80"
+    environment:
+      DB_HOST: db
+      DB_USER: app_user
+      DB_PASS: AppPass456
+      DB_NAME: evaluativa_db
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - red-evaluativa
+
+volumes:
+  datos-evaluativa:
+
+networks:
+  red-evaluativa:
